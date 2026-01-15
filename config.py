@@ -7,11 +7,10 @@ SPREADSHEET_ID = "10Boxcjk_wOIzxUQlee7Yn_lGV0xMPzmzMYgceITUku8"
 SHEET_NAME = "Sheet1"   # or whatever you named the tab
 
 # OAuth scopes
-SCOPES = [
+GMAIL_SCOPS = [
     "https://www.googleapis.com/auth/gmail.modify",
-    "https://www.googleapis.com/auth/spreadsheets",
 ]
-
+GOOGLE_SHEETS_SCOPS = ["https://www.googleapis.com/auth/spreadsheets"]
 # Credential paths
 CREDENTIALS_FILE = "credentials/credentials.json"
 TOKEN_FILE = "credentials/token.json"

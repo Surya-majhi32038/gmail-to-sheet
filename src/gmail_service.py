@@ -1,38 +1,41 @@
 # src/gmail_service.py
 
 import os
-import pickle
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
-from config import GOOGLE_SHEETS_SCOPS, GMAIL_SCOPS
-from config import CREDENTIALS_FILE, TOKEN_FILE
+from google.oauth2.credentials import Credentials
 
-# TOKEN_FILE = "token_gmail.pickle"
-# CREDENTIALS_FILE = "credentials/credentials.json"
+from config import GMAIL_SCOPES
+from config import CREDENTIALS_FILE, TOKEN_FILE
 
 
 def get_gmail_service():
     creds = None
 
+    # ✅ Load existing token (JSON)
     if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE, "rb") as token:
-            creds = pickle.load(token)
+        creds = Credentials.from_authorized_user_file(
+            TOKEN_FILE, GMAIL_SCOPES
+        )
 
+    # ✅ If token is invalid or missing
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
-                CREDENTIALS_FILE, GMAIL_SCOPS
+                CREDENTIALS_FILE, GMAIL_SCOPES
             )
             creds = flow.run_local_server(port=0)
 
-        with open(TOKEN_FILE, "wb") as token:
-            pickle.dump(creds, token)
+        # ✅ Save token as UTF-8 JSON
+        with open(TOKEN_FILE, "w", encoding="utf-8") as token:
+            token.write(creds.to_json())
 
     service = build("gmail", "v1", credentials=creds)
     return service
+
 
 def fetch_unread_emails(service, max_results=10):
     """
@@ -40,7 +43,7 @@ def fetch_unread_emails(service, max_results=10):
     Marks them as read after fetching.
     Returns a list of message objects.
     """
-    # Search only unread emails in Inbox
+
     response = service.users().messages().list(
         userId="me",
         labelIds=["INBOX", "UNREAD"],
@@ -50,7 +53,7 @@ def fetch_unread_emails(service, max_results=10):
     messages = response.get("messages", [])
 
     if not messages:
-        print(" No unread emails found.")
+        print("No unread emails found.")
         return []
 
     email_data = []
@@ -58,7 +61,6 @@ def fetch_unread_emails(service, max_results=10):
     for msg in messages:
         msg_id = msg["id"]
 
-        # Get full message
         message = service.users().messages().get(
             userId="me",
             id=msg_id,
